@@ -36,6 +36,7 @@ export function ThemeApplier() {
     store.borderRadius,
     store.fontFamily,
     store.bgStyle,
+    store.glowIntensity,
     store,
   ])
 

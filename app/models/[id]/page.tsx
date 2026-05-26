@@ -5,33 +5,33 @@ import { notFound, useParams } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
 import {
-  ArrowLeft,
-  Download,
-  Clock,
-  Layers,
-  Ruler,
-  Package,
-  Tag,
-  CheckCircle,
-  Share2,
-  Printer,
+  ArrowLeft, Download, Clock, Layers, Ruler,
+  Package, Tag, CheckCircle, Share2, Printer,
+  Sparkles, ChevronRight,
 } from "lucide-react"
 import { MODELS } from "@/lib/models"
 import { Navbar } from "@/components/ui/navbar"
 import { ThemeCustomizer } from "@/components/ui/theme-customizer"
 import { Footer } from "@/components/ui/footer"
+import { ModelCard } from "@/components/ui/model-card"
 
-// SSR-safe dynamic import for the 3D viewer
 const ModelViewer3D = dynamic(
   () => import("@/components/ui/model-viewer-3d").then((m) => m.ModelViewer3D),
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full flex items-center justify-center bg-[#080810] rounded-2xl min-h-[400px]">
-        <div
-          className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: "var(--accent) transparent var(--accent) var(--accent)" }}
-        />
+      <div className="w-full h-full flex items-center justify-center rounded-2xl min-h-[500px]"
+        style={{ background: "#06060f", border: "1px solid rgba(255,255,255,0.08)" }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative w-12 h-12">
+            <div
+              className="absolute inset-0 rounded-full border-2 animate-spin"
+              style={{ borderColor: "var(--accent) transparent var(--accent) var(--accent)" }}
+            />
+          </div>
+          <p className="text-white/30 text-sm">Loading viewer…</p>
+        </div>
       </div>
     ),
   }
@@ -43,9 +43,8 @@ export default function ModelDetailPage() {
   const [downloaded, setDownloaded] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  // params.id can be string | string[] — normalise to string
   const rawId = params?.id
-  const id = Array.isArray(rawId) ? rawId[0] : rawId ?? ""
+  const id    = Array.isArray(rawId) ? rawId[0] : rawId ?? ""
   const model = MODELS.find((m) => m.id === id)
   if (!model) notFound()
 
@@ -72,13 +71,15 @@ export default function ModelDetailPage() {
   }
 
   const stats = [
-    { icon: Layers, label: "Polygons", value: model.polygons.toLocaleString() },
-    { icon: Package, label: "File Size", value: model.fileSize },
-    { icon: Clock, label: "Print Time", value: model.printTime },
-    { icon: Ruler, label: "Dimensions", value: model.dimensions },
-    { icon: Printer, label: "Material", value: model.material },
-    { icon: Tag, label: "Format", value: `.${model.fileFormat.toUpperCase()}` },
+    { icon: Layers,  label: "Polygons",   value: model.polygons.toLocaleString() },
+    { icon: Package, label: "File Size",   value: model.fileSize },
+    { icon: Clock,   label: "Print Time",  value: model.printTime },
+    { icon: Ruler,   label: "Dimensions",  value: model.dimensions },
+    { icon: Printer, label: "Material",    value: model.material },
+    { icon: Tag,     label: "Format",      value: `.${model.fileFormat.toUpperCase()}` },
   ]
+
+  const moreModels = MODELS.filter((m) => m.id !== model.id).slice(0, 4)
 
   return (
     <>
@@ -86,60 +87,69 @@ export default function ModelDetailPage() {
       <ThemeCustomizer open={customizerOpen} onClose={() => setCustomizerOpen(false)} />
 
       <main className="flex-1 max-w-7xl mx-auto px-6 py-24">
-        {/* Back button */}
+
+        {/* Back */}
         <Link
           href="/#gallery"
-          className="inline-flex items-center gap-2 text-white/40 hover:text-white/80 transition-colors mb-8 text-sm cursor-pointer"
+          className="inline-flex items-center gap-2 text-white/35 hover:text-white/80 transition-colors mb-8 text-sm cursor-pointer group animate-slide-right"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           Back to Gallery
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-          {/* ── Left: 3D Viewer ───────────────────────────── */}
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12 animate-fade-up">
+
+          {/* ── LEFT: 3D Viewer ── */}
+          <div className="lg:col-span-3 flex flex-col gap-4">
             <ModelViewer3D
               fileUrl={model.fileUrl}
               fileFormat={model.fileFormat}
               placeholderShape={model.placeholderShape}
               accentColor={model.accentColor}
-              className="w-full aspect-square lg:aspect-auto lg:h-[560px]"
+              className="w-full aspect-square lg:aspect-auto lg:h-[580px]"
             />
 
             {/* Print tips */}
             <div
-              className="mt-4 p-4 rounded-xl border border-white/[0.06] text-sm text-white/40 leading-relaxed"
-              style={{ background: "rgba(255,255,255,0.02)" }}
+              className="p-4 rounded-xl border text-sm text-white/40 leading-relaxed"
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
             >
-              <span className="text-white/60 font-medium">Print tips: </span>
-              Layer height 0.2 mm · {model.material} recommended · No supports unless noted
+              <span className="text-white/60 font-semibold">Print tips: </span>
+              Layer height 0.2 mm · {model.material} recommended · No supports unless noted · Rotate on build plate for best strength
             </div>
           </div>
 
-          {/* ── Right: Info panel ─────────────────────────── */}
+          {/* ── RIGHT: Info ── */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            {/* Header */}
+
+            {/* Category + date */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span
+                className="px-3 py-1 rounded-full text-xs font-semibold"
+                style={{
+                  background: `${model.accentColor}20`,
+                  color: model.accentColor,
+                  border: `1px solid ${model.accentColor}40`,
+                }}
+              >
+                {model.category}
+              </span>
+              <span className="text-white/25 text-xs">
+                {new Date(model.createdAt).toLocaleDateString("en-GB", {
+                  day: "numeric", month: "long", year: "numeric",
+                })}
+              </span>
+            </div>
+
+            {/* Title */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{
-                    background: `${model.accentColor}20`,
-                    color: model.accentColor,
-                    border: `1px solid ${model.accentColor}40`,
-                  }}
-                >
-                  {model.category}
-                </span>
-                <span className="text-white/25 text-xs">
-                  {new Date(model.createdAt).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-white font-display leading-tight mb-3">
+              <h1
+                className="text-3xl lg:text-4xl font-bold text-white font-display leading-tight mb-3"
+                style={{ textShadow: `0 0 40px ${model.accentColor}30` }}
+              >
                 {model.title}
               </h1>
               <p className="text-white/50 leading-relaxed text-sm">{model.longDescription}</p>
@@ -148,25 +158,37 @@ export default function ModelDetailPage() {
             {/* Download CTA */}
             <button
               onClick={handleDownload}
-              className="flex items-center justify-center gap-3 w-full py-4 rounded-xl font-semibold text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="relative overflow-hidden flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-bold text-white text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer group"
               style={{
                 background: downloaded
                   ? "#10b981"
                   : `linear-gradient(135deg, ${model.accentColor}, ${model.accentColor}cc)`,
                 boxShadow: downloaded
-                  ? "0 0 20px rgba(16,185,129,0.4)"
-                  : `0 0 28px ${model.accentColor}50`,
+                  ? "0 0 24px rgba(16,185,129,0.5)"
+                  : `0 0 36px ${model.accentColor}55, 0 8px 32px rgba(0,0,0,0.4)`,
               }}
             >
+              {/* Shine */}
+              <span
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{
+                  background: "linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)",
+                }}
+              />
               {downloaded ? (
                 <>
-                  <CheckCircle className="w-5 h-5" />
-                  Downloaded!
+                  <CheckCircle className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Downloaded!</span>
                 </>
               ) : (
                 <>
-                  <Download className="w-5 h-5" />
-                  Download {model.fileFormat.toUpperCase()} File
+                  <Download className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">Download {model.fileFormat.toUpperCase()}</span>
+                  <span
+                    className="relative z-10 px-2 py-0.5 rounded-full text-xs font-medium bg-black/20"
+                  >
+                    {model.fileSize}
+                  </span>
                 </>
               )}
             </button>
@@ -188,34 +210,41 @@ export default function ModelDetailPage() {
 
             {/* Stats grid */}
             <div
-              className="rounded-xl border border-white/[0.06] overflow-hidden"
+              className="rounded-2xl border border-white/[0.06] overflow-hidden"
               style={{ background: "rgba(255,255,255,0.02)" }}
             >
               {stats.map(({ icon: Icon, label, value }, i) => (
                 <div
                   key={label}
-                  className={`flex items-center justify-between px-4 py-3 ${
+                  className={`flex items-center justify-between px-4 py-3.5 transition-colors group/row hover:bg-white/[0.03] ${
                     i !== stats.length - 1 ? "border-b border-white/[0.05]" : ""
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 text-white/40 text-sm">
-                    <Icon className="w-3.5 h-3.5" />
+                  <div className="flex items-center gap-2.5 text-white/40 text-sm group-hover/row:text-white/60 transition-colors">
+                    <Icon className="w-3.5 h-3.5" style={{ color: model.accentColor + "80" }} />
                     {label}
                   </div>
-                  <span className="text-white/80 text-sm font-medium">{value}</span>
+                  <span className="text-white/80 text-sm font-medium font-mono">{value}</span>
                 </div>
               ))}
             </div>
 
             {/* Tags */}
             <div>
-              <p className="text-xs text-white/30 uppercase tracking-widest mb-2.5">Tags</p>
+              <p className="text-xs text-white/25 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                <Tag className="w-3 h-3" />
+                Tags
+              </p>
               <div className="flex flex-wrap gap-2">
                 {model.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2.5 py-1 rounded-lg text-xs text-white/40 border border-white/[0.06]"
-                    style={{ background: "rgba(255,255,255,0.03)" }}
+                    className="px-2.5 py-1 rounded-lg text-xs border transition-colors cursor-default"
+                    style={{
+                      background: `${model.accentColor}10`,
+                      borderColor: `${model.accentColor}30`,
+                      color: "rgba(255,255,255,0.45)",
+                    }}
                   >
                     #{tag}
                   </span>
@@ -225,35 +254,36 @@ export default function ModelDetailPage() {
           </div>
         </div>
 
-        {/* ── More models ─────────────────────────────── */}
-        <section className="mt-20">
-          <h2 className="text-xl font-bold text-white font-display mb-6">More Models</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {MODELS.filter((m) => m.id !== model.id)
-              .slice(0, 4)
-              .map((m) => (
-                <Link
-                  key={m.id}
-                  href={`/models/${m.id}`}
-                  className="group rounded-xl border border-white/[0.06] overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-200"
-                  style={{ background: "rgba(255,255,255,0.02)" }}
-                >
-                  <div className={`h-28 bg-gradient-to-br ${m.gradient} relative overflow-hidden`}>
-                    <div
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ background: "rgba(0,0,0,0.3)" }}
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-white/80 text-xs font-medium font-display line-clamp-1 group-hover:text-[var(--accent)] transition-colors">
-                      {m.title}
-                    </p>
-                    <p className="text-white/30 text-xs mt-0.5">{m.category}</p>
-                  </div>
-                </Link>
+        {/* ── More models ── */}
+        {moreModels.length > 0 && (
+          <section className="mt-24">
+            <div className="flex items-center justify-between mb-7">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-1 h-6 rounded-full"
+                  style={{ background: "var(--accent)" }}
+                />
+                <h2 className="text-xl font-bold text-white font-display">More Models</h2>
+              </div>
+              <Link
+                href="/#gallery"
+                className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white/70 transition-colors cursor-pointer"
+                style={{ color: "var(--accent)" }}
+              >
+                View all
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children">
+              {moreModels.map((m) => (
+                <div key={m.id} className="animate-scale-in">
+                  <ModelCard model={m} />
+                </div>
               ))}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />

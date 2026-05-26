@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { type ThemeConfig } from "@/lib/use-theme-store"
 
 const DEFAULT_THEME: ThemeConfig = {
-  accent: "#6366f1",
-  bgColor: "#050508",
-  cardOpacity: 4,
-  borderRadius: "rounded",
-  fontFamily: "space-grotesk",
-  bgStyle: "mesh",
-  siteName: "Moody",
-  tagline: "Precision-engineered 3D models ready to print",
+  accent:        "#6366f1",
+  bgColor:       "#050508",
+  cardOpacity:   4,
+  borderRadius:  "rounded",
+  fontFamily:    "space-grotesk",
+  bgStyle:       "mesh",
+  siteName:      "Moody",
+  tagline:       "Precision-engineered 3D models ready to print",
+  logoEmoji:     "⬡",
+  glowIntensity: 70,
+  showParticles: true,
+  cardStyle:     "glass",
 }
 
 const BLOB_FILENAME = "portfolio-theme.json"

@@ -9,8 +9,9 @@ import { siteConfig } from "@/lib/site-config"
 export function Navbar({ onCustomizerOpen }: { onCustomizerOpen: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const siteName = useThemeStore((s) => s.siteName)
-  const isAdmin = useThemeStore((s) => s.isAdmin)
+  const siteName  = useThemeStore((s) => s.siteName)
+  const logoEmoji = useThemeStore((s) => s.logoEmoji)
+  const isAdmin   = useThemeStore((s) => s.isAdmin)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24)
@@ -31,10 +32,13 @@ export function Navbar({ onCustomizerOpen }: { onCustomizerOpen: () => void }) {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-transform duration-200 group-hover:scale-110"
-            style={{ background: "var(--accent)" }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-110"
+            style={{
+              background: "var(--accent)",
+              boxShadow: scrolled ? "0 0 12px var(--accent-glow)" : undefined,
+            }}
           >
-            <Box className="w-4 h-4 text-white" />
+            <span className="text-base leading-none">{logoEmoji || "⬡"}</span>
           </div>
           <span className="font-bold text-white text-lg tracking-tight font-display">
             {siteName}
