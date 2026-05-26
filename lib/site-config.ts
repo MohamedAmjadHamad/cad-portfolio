@@ -12,11 +12,14 @@ export const siteConfig = {
   /** Short bio shown in the About section */
   bio: "I design functional, printable 3D models with a focus on precision and real-world usability. Browse the gallery, explore interactively, and download any model for free.",
 
-  /** Social / contact links — leave empty string to hide */
+  /** Social / contact links — leave empty string "" to hide a link */
   social: {
     github: "https://github.com/MohamedAmjadHamad",
     instagram: "https://www.instagram.com/moody.gxy/",
+    twitter: "",
     email: "moodygxy123@gmail.com",
+    thingiverse: "",
+    printables: "",
   },
 
   /** SEO metadata */

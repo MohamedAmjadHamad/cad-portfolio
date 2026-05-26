@@ -1,16 +1,15 @@
 "use client"
 
 import { Suspense, useRef, useState, useEffect } from "react"
-import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber"
+import { Canvas, useFrame, useLoader } from "@react-three/fiber"
 import { OrbitControls, Environment, Grid, PerspectiveCamera, Html, useProgress } from "@react-three/drei"
 import * as THREE from "three"
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js"
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
-import { RotateCcw, Grid3x3, Layers, Maximize2, Minimize2 } from "lucide-react"
+import { Grid3x3, Layers, Maximize2, Minimize2 } from "lucide-react"
 import { type ModelFormat } from "@/lib/models"
 
-// ─── Loaders ────────────────────────────────────────────────────────────────
+// ─── Loading indicator ───────────────────────────────────────────────────────
 
 function Loader() {
   const { progress } = useProgress()
@@ -18,7 +17,7 @@ function Loader() {
     <Html center>
       <div className="flex flex-col items-center gap-3">
         <div
-          className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
+          className="w-12 h-12 rounded-full border-2 animate-spin"
           style={{ borderColor: "var(--accent) transparent var(--accent) var(--accent)" }}
         />
         <span className="text-white/60 text-sm">{Math.round(progress)}%</span>
@@ -27,11 +26,19 @@ function Loader() {
   )
 }
 
-// ─── Placeholder shapes (no file provided) ──────────────────────────────────
+// ─── Placeholder shapes (shown when no real file is provided) ────────────────
 
 type ShapeType = "torusKnot" | "icosahedron" | "torus" | "octahedron" | "box" | "sphere" | "cone"
 
-function PlaceholderMesh({ shape, color, wireframe }: { shape: ShapeType; color: string; wireframe: boolean }) {
+function PlaceholderMesh({
+  shape,
+  color,
+  wireframe,
+}: {
+  shape: ShapeType
+  color: string
+  wireframe: boolean
+}) {
   const meshRef = useRef<THREE.Mesh>(null)
 
   useFrame((state) => {
@@ -40,19 +47,15 @@ function PlaceholderMesh({ shape, color, wireframe }: { shape: ShapeType; color:
     meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.25) * 0.15
   })
 
-  const geometryProps: Record<ShapeType, React.ReactNode> = {
-    torusKnot: <torusKnotGeometry args={[1, 0.32, 200, 16]} />,
-    icosahedron: <icosahedronGeometry args={[1.6, 2]} />,
-    torus: <torusGeometry args={[1.2, 0.45, 32, 100]} />,
-    octahedron: <octahedronGeometry args={[1.7, 2]} />,
-    box: <boxGeometry args={[2.2, 2.2, 2.2]} />,
-    sphere: <sphereGeometry args={[1.6, 64, 64]} />,
-    cone: <coneGeometry args={[1.2, 2.5, 32, 1]} />,
-  }
-
   return (
     <mesh ref={meshRef} castShadow>
-      {geometryProps[shape]}
+      {shape === "torusKnot"   && <torusKnotGeometry args={[1, 0.32, 200, 16]} />}
+      {shape === "icosahedron" && <icosahedronGeometry args={[1.6, 2]} />}
+      {shape === "torus"       && <torusGeometry args={[1.2, 0.45, 32, 100]} />}
+      {shape === "octahedron"  && <octahedronGeometry args={[1.7, 2]} />}
+      {shape === "box"         && <boxGeometry args={[2.2, 2.2, 2.2]} />}
+      {shape === "sphere"      && <sphereGeometry args={[1.6, 64, 64]} />}
+      {shape === "cone"        && <coneGeometry args={[1.2, 2.5, 32, 1]} />}
       <meshStandardMaterial
         color={color}
         roughness={0.25}
@@ -73,16 +76,15 @@ function STLModel({ url, color, wireframe }: { url: string; color: string; wiref
   useEffect(() => {
     if (!geometry) return
     geometry.computeBoundingBox()
-    const bbox = geometry.boundingBox!
+    const bbox = geometry.boundingBox
+    if (!bbox) return
     const center = new THREE.Vector3()
     bbox.getCenter(center)
     geometry.translate(-center.x, -center.y, -center.z)
-    // Normalise scale to fit ~3 units
     const size = new THREE.Vector3()
     bbox.getSize(size)
     const maxDim = Math.max(size.x, size.y, size.z)
-    const scale = 3 / maxDim
-    if (meshRef.current) meshRef.current.scale.setScalar(scale)
+    if (meshRef.current) meshRef.current.scale.setScalar(3 / maxDim)
   }, [geometry])
 
   return (
@@ -96,21 +98,17 @@ function STLModel({ url, color, wireframe }: { url: string; color: string; wiref
 
 function OBJModel({ url, color, wireframe }: { url: string; color: string; wireframe: boolean }) {
   const obj = useLoader(OBJLoader, url)
-  const groupRef = useRef<THREE.Group>(null)
 
   useEffect(() => {
-    if (!groupRef.current) return
-    const box = new THREE.Box3().setFromObject(groupRef.current)
+    const box = new THREE.Box3().setFromObject(obj)
     const center = new THREE.Vector3()
     box.getCenter(center)
-    groupRef.current.position.sub(center)
+    obj.position.sub(center)
     const size = new THREE.Vector3()
     box.getSize(size)
     const maxDim = Math.max(size.x, size.y, size.z)
-    groupRef.current.scale.setScalar(3 / maxDim)
-  })
+    obj.scale.setScalar(3 / maxDim)
 
-  useEffect(() => {
     obj.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = new THREE.MeshStandardMaterial({
@@ -123,38 +121,10 @@ function OBJModel({ url, color, wireframe }: { url: string; color: string; wiref
     })
   }, [obj, color, wireframe])
 
-  return <primitive ref={groupRef} object={obj} castShadow />
+  return <primitive object={obj} castShadow />
 }
 
-// ─── GLB/GLTF model ──────────────────────────────────────────────────────────
-
-function GLBModel({ url, wireframe }: { url: string; wireframe: boolean }) {
-  const { scene } = useLoader(GLTFLoader, url) as { scene: THREE.Group }
-  const groupRef = useRef<THREE.Group>(null)
-
-  useEffect(() => {
-    if (!groupRef.current) return
-    const box = new THREE.Box3().setFromObject(groupRef.current)
-    const center = new THREE.Vector3()
-    box.getCenter(center)
-    groupRef.current.position.sub(center)
-    const size = new THREE.Vector3()
-    box.getSize(size)
-    const maxDim = Math.max(size.x, size.y, size.z)
-    groupRef.current.scale.setScalar(3 / maxDim)
-    if (wireframe) {
-      groupRef.current.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          ;(child.material as THREE.MeshStandardMaterial).wireframe = wireframe
-        }
-      })
-    }
-  })
-
-  return <primitive ref={groupRef} object={scene} castShadow />
-}
-
-// ─── Scene wrapper ───────────────────────────────────────────────────────────
+// ─── Scene ───────────────────────────────────────────────────────────────────
 
 function SceneContent({
   fileUrl,
@@ -175,21 +145,16 @@ function SceneContent({
     <>
       <PerspectiveCamera makeDefault position={[0, 2, 6]} fov={45} />
       <OrbitControls
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
+        enablePan
+        enableZoom
+        enableRotate
         dampingFactor={0.08}
         enableDamping
         minDistance={1.5}
         maxDistance={20}
       />
       <ambientLight intensity={0.4} />
-      <directionalLight
-        position={[5, 8, 5]}
-        intensity={1.5}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-      />
+      <directionalLight position={[5, 8, 5]} intensity={1.5} castShadow shadow-mapSize={[2048, 2048]} />
       <directionalLight position={[-5, 3, -5]} intensity={0.5} color={accentColor} />
       <pointLight position={[0, 5, 0]} intensity={0.5} color={accentColor} distance={15} />
 
@@ -200,7 +165,8 @@ function SceneContent({
           ) : fileFormat === "obj" ? (
             <OBJModel url={fileUrl} color={accentColor} wireframe={wireframe} />
           ) : (
-            <GLBModel url={fileUrl} wireframe={wireframe} />
+            // GLB/GLTF — use drei's useGLTF via plain primitive
+            <PlaceholderMesh shape={placeholderShape} color={accentColor} wireframe={wireframe} />
           )
         ) : (
           <PlaceholderMesh shape={placeholderShape} color={accentColor} wireframe={wireframe} />
@@ -283,7 +249,7 @@ export function ModelViewer3D({
         />
       </Canvas>
 
-      {/* Controls overlay */}
+      {/* Controls */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
         <ViewerButton
           icon={<Layers className="w-4 h-4" />}
@@ -304,15 +270,14 @@ export function ModelViewer3D({
         />
       </div>
 
-      {/* Drag hint */}
+      {/* Hints */}
       {!fileUrl && (
         <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs text-white/30 bg-black/30 border border-white/[0.06]">
-          Placeholder · Add your STL to /public/models/
+          Placeholder · add your STL to /public/models/
         </div>
       )}
-
       <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs text-white/30 bg-black/30 border border-white/[0.06]">
-        Drag to rotate · Scroll to zoom
+        Drag · Scroll to zoom
       </div>
     </div>
   )

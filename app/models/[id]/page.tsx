@@ -43,7 +43,10 @@ export default function ModelDetailPage() {
   const [downloaded, setDownloaded] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const model = MODELS.find((m) => m.id === params.id)
+  // params.id can be string | string[] — normalise to string
+  const rawId = params?.id
+  const id = Array.isArray(rawId) ? rawId[0] : rawId ?? ""
+  const model = MODELS.find((m) => m.id === id)
   if (!model) notFound()
 
   const handleDownload = () => {
