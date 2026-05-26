@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react"
 import {
   X, RotateCcw, Palette, Type, Layers, Sun, Globe,
   LogOut, CheckCircle, AlertCircle, Sparkles, Box, Zap,
+  Eye, EyeOff, Package,
 } from "lucide-react"
 import { useThemeStore, type ThemeConfig } from "@/lib/use-theme-store"
+import { MODELS } from "@/lib/models"
 
 const ACCENT_PRESETS = [
   { label: "Indigo",  value: "#6366f1" },
@@ -35,8 +37,8 @@ const FONT_OPTIONS: { label: string; value: "space-grotesk" | "inter" | "mono" |
 ]
 
 const RADIUS_OPTIONS: { label: string; value: "sharp" | "rounded" | "pill"; px: string }[] = [
-  { label: "Sharp",   value: "sharp",   px: "4px" },
-  { label: "Rounded", value: "rounded", px: "10px" },
+  { label: "Sharp",   value: "sharp",   px: "4px"   },
+  { label: "Rounded", value: "rounded", px: "10px"  },
   { label: "Pill",    value: "pill",    px: "999px" },
 ]
 
@@ -95,6 +97,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
       glowIntensity: store.glowIntensity,
       showParticles: store.showParticles,
       cardStyle:     store.cardStyle,
+      hiddenModels:  store.hiddenModels,
       adminKey,
     }
 
@@ -142,22 +145,24 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
 
   return (
     <>
+      {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 z-40 bg-black/55 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         aria-hidden
       />
 
+      {/* Panel */}
       <div
         ref={panelRef}
         className={`fixed top-0 right-0 h-full w-80 z-50 flex flex-col transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         style={{
-          background: "linear-gradient(180deg, #0d0d18 0%, #09090f 100%)",
+          background: "linear-gradient(180deg, #0e0e1a 0%, #09090f 100%)",
           borderLeft: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.6)",
+          boxShadow: "-24px 0 80px rgba(0,0,0,0.7)",
         }}
         role="dialog"
         aria-label="Theme customizer"
@@ -207,8 +212,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
               <div>
                 <label className="text-xs text-white/40 mb-1.5 block">Site Name</label>
                 <input
-                  type="text"
-                  value={store.siteName}
+                  type="text" value={store.siteName}
                   onChange={(e) => store.setSiteName(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm text-white bg-white/[0.05] border border-white/[0.08] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   placeholder="Your Name"
@@ -217,8 +221,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
               <div>
                 <label className="text-xs text-white/40 mb-1.5 block">Tagline</label>
                 <input
-                  type="text"
-                  value={store.tagline}
+                  type="text" value={store.tagline}
                   onChange={(e) => store.setTagline(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm text-white bg-white/[0.05] border border-white/[0.08] focus:outline-none focus:border-[var(--accent)] transition-colors"
                   placeholder="Your tagline…"
@@ -230,7 +233,6 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
           {/* ── Logo Icon ── */}
           <section>
             <SectionLabel icon={<Box className="w-3.5 h-3.5" />} label="Logo Icon" />
-            <p className="text-xs text-white/30 mb-2.5">Pick a symbol for your navbar logo</p>
             <div className="grid grid-cols-5 gap-2 mb-3">
               {LOGO_EMOJIS.map((em) => (
                 <button
@@ -250,14 +252,70 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
             <div className="flex items-center gap-3">
               <label className="text-xs text-white/40 shrink-0">Custom:</label>
               <input
-                type="text"
-                value={store.logoEmoji}
+                type="text" value={store.logoEmoji} maxLength={2}
                 onChange={(e) => store.setLogoEmoji(e.target.value.slice(0, 2))}
-                maxLength={2}
                 className="w-16 px-2 py-2 rounded-lg text-center text-lg text-white bg-white/[0.05] border border-white/[0.08] focus:outline-none focus:border-[var(--accent)] transition-colors"
                 placeholder="⬡"
               />
             </div>
+          </section>
+
+          {/* ── Model Manager ── */}
+          <section>
+            <SectionLabel icon={<Package className="w-3.5 h-3.5" />} label="Model Manager" />
+            <p className="text-xs text-white/30 mb-3">
+              Toggle which models appear in the gallery. Hidden models won&apos;t show for any visitor after publishing.
+            </p>
+            <div className="space-y-2">
+              {MODELS.map((model) => {
+                const isHidden = store.hiddenModels.includes(model.id)
+                return (
+                  <div
+                    key={model.id}
+                    className="flex items-center gap-3 p-3 rounded-xl border transition-all"
+                    style={{
+                      background: isHidden ? "rgba(239,68,68,0.05)" : "rgba(255,255,255,0.03)",
+                      borderColor: isHidden ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.07)",
+                    }}
+                  >
+                    {/* Color dot */}
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ background: model.accentColor }}
+                    />
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-white/80 truncate">{model.title}</p>
+                      <p className="text-[10px] text-white/30 truncate">{model.category} · {model.fileFormat.toUpperCase()}</p>
+                    </div>
+                    {/* Toggle */}
+                    <button
+                      onClick={() => store.toggleHideModel(model.id)}
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer border"
+                      style={{
+                        background: isHidden ? "rgba(239,68,68,0.15)" : "rgba(16,185,129,0.12)",
+                        borderColor: isHidden ? "rgba(239,68,68,0.35)" : "rgba(16,185,129,0.3)",
+                        color: isHidden ? "#f87171" : "#6ee7b7",
+                      }}
+                      title={isHidden ? "Show model" : "Hide model"}
+                    >
+                      {isHidden
+                        ? <><EyeOff className="w-3 h-3" /> Hidden</>
+                        : <><Eye    className="w-3 h-3" /> Shown</>
+                      }
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            {store.hiddenModels.length > 0 && (
+              <button
+                onClick={() => store.setHiddenModels([])}
+                className="mt-2 w-full text-xs text-white/30 hover:text-white/60 transition-colors cursor-pointer py-1.5"
+              >
+                Show all models
+              </button>
+            )}
           </section>
 
           {/* ── Accent colour ── */}
@@ -281,8 +339,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
             <div className="flex items-center gap-3">
               <label className="text-xs text-white/40 shrink-0">Custom:</label>
               <input
-                type="color"
-                value={store.accent}
+                type="color" value={store.accent}
                 onChange={(e) => store.setAccent(e.target.value)}
                 className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-white/[0.08] p-0.5"
               />
@@ -312,8 +369,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
             <div className="flex items-center gap-3">
               <label className="text-xs text-white/40 shrink-0">Custom:</label>
               <input
-                type="color"
-                value={store.bgColor}
+                type="color" value={store.bgColor}
                 onChange={(e) => store.setBgColor(e.target.value)}
                 className="w-10 h-8 rounded-lg cursor-pointer bg-transparent border border-white/[0.08] p-0.5"
               />
@@ -355,8 +411,6 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
                     background: store.cardStyle === opt.value ? "var(--accent)" : "rgba(255,255,255,0.04)",
                     borderColor: store.cardStyle === opt.value ? "var(--accent)" : "rgba(255,255,255,0.08)",
                     color: store.cardStyle === opt.value ? "white" : "rgba(255,255,255,0.5)",
-                    boxShadow: store.cardStyle === opt.value && opt.value === "neon"
-                      ? "0 0 12px var(--accent-glow)" : undefined,
                   }}
                 >
                   {opt.label}
@@ -471,7 +525,7 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-white text-sm font-bold transition-all cursor-pointer disabled:opacity-50"
             style={{
               background: publishStatus === "saved" ? "#10b981" : "var(--accent)",
-              boxShadow: publishStatus === "saving" ? "none" : "0 0 20px var(--accent-glow)",
+              boxShadow: publishStatus === "saving" ? "none" : "0 0 24px var(--accent-glow)",
             }}
           >
             {publishStatus === "saving" && (

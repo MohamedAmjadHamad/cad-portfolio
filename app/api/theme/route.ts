@@ -14,6 +14,7 @@ const DEFAULT_THEME: ThemeConfig = {
   glowIntensity: 70,
   showParticles: true,
   cardStyle:     "glass",
+  hiddenModels:  [],
 }
 
 const BLOB_FILENAME = "portfolio-theme.json"

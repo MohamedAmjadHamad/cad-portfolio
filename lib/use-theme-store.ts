@@ -12,84 +12,88 @@ export interface ThemeConfig {
   bgStyle: "solid" | "mesh" | "dots" | "grid" | "aurora"
   siteName: string
   tagline: string
-  // New in v2
   logoEmoji: string
-  glowIntensity: number   // 0–100
+  glowIntensity: number
   showParticles: boolean
   cardStyle: "glass" | "solid" | "neon"
+  hiddenModels: string[]      // model IDs hidden by admin
 }
 
 interface ThemeStore extends ThemeConfig {
-  // Admin state (not persisted — clears on page close)
   isAdmin: boolean
   setIsAdmin: (v: boolean) => void
 
-  // Individual setters
-  setAccent: (v: string) => void
-  setBgColor: (v: string) => void
-  setCardOpacity: (v: number) => void
-  setBorderRadius: (v: ThemeConfig["borderRadius"]) => void
-  setFontFamily: (v: ThemeConfig["fontFamily"]) => void
-  setBgStyle: (v: ThemeConfig["bgStyle"]) => void
-  setSiteName: (v: string) => void
-  setTagline: (v: string) => void
-  setLogoEmoji: (v: string) => void
-  setGlowIntensity: (v: number) => void
-  setShowParticles: (v: boolean) => void
-  setCardStyle: (v: ThemeConfig["cardStyle"]) => void
+  setAccent:        (v: string)                    => void
+  setBgColor:       (v: string)                    => void
+  setCardOpacity:   (v: number)                    => void
+  setBorderRadius:  (v: ThemeConfig["borderRadius"]) => void
+  setFontFamily:    (v: ThemeConfig["fontFamily"])   => void
+  setBgStyle:       (v: ThemeConfig["bgStyle"])      => void
+  setSiteName:      (v: string)                    => void
+  setTagline:       (v: string)                    => void
+  setLogoEmoji:     (v: string)                    => void
+  setGlowIntensity: (v: number)                    => void
+  setShowParticles: (v: boolean)                   => void
+  setCardStyle:     (v: ThemeConfig["cardStyle"])   => void
+  setHiddenModels:  (v: string[])                  => void
+  toggleHideModel:  (id: string)                   => void
 
-  // Batch setter — used when loading saved theme from server
   setAll: (config: ThemeConfig) => void
-
-  reset: () => void
+  reset:  () => void
 }
 
 export const DEFAULTS: ThemeConfig = {
-  accent: "#6366f1",
-  bgColor: "#050508",
-  cardOpacity: 4,
-  borderRadius: "rounded",
-  fontFamily: "space-grotesk",
-  bgStyle: "mesh",
-  siteName: "Moody",
-  tagline: "Precision-engineered 3D models ready to print",
-  logoEmoji: "⬡",
+  accent:        "#6366f1",
+  bgColor:       "#050508",
+  cardOpacity:   4,
+  borderRadius:  "rounded",
+  fontFamily:    "space-grotesk",
+  bgStyle:       "mesh",
+  siteName:      "Moody",
+  tagline:       "Precision-engineered 3D models ready to print",
+  logoEmoji:     "⬡",
   glowIntensity: 70,
   showParticles: true,
-  cardStyle: "glass",
+  cardStyle:     "glass",
+  hiddenModels:  [],
 }
 
 export const useThemeStore = create<ThemeStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...DEFAULTS,
       isAdmin: false,
-      setIsAdmin:       (isAdmin)        => set({ isAdmin }),
-      setAccent:        (accent)         => set({ accent }),
-      setBgColor:       (bgColor)        => set({ bgColor }),
-      setCardOpacity:   (cardOpacity)    => set({ cardOpacity }),
-      setBorderRadius:  (borderRadius)   => set({ borderRadius }),
-      setFontFamily:    (fontFamily)     => set({ fontFamily }),
-      setBgStyle:       (bgStyle)        => set({ bgStyle }),
-      setSiteName:      (siteName)       => set({ siteName }),
-      setTagline:       (tagline)        => set({ tagline }),
-      setLogoEmoji:     (logoEmoji)      => set({ logoEmoji }),
-      setGlowIntensity: (glowIntensity)  => set({ glowIntensity }),
-      setShowParticles: (showParticles)  => set({ showParticles }),
-      setCardStyle:     (cardStyle)      => set({ cardStyle }),
-      setAll:           (config)         => set(config),
-      reset:            ()               => set(DEFAULTS),
+      setIsAdmin:       (isAdmin)       => set({ isAdmin }),
+      setAccent:        (accent)        => set({ accent }),
+      setBgColor:       (bgColor)       => set({ bgColor }),
+      setCardOpacity:   (cardOpacity)   => set({ cardOpacity }),
+      setBorderRadius:  (borderRadius)  => set({ borderRadius }),
+      setFontFamily:    (fontFamily)    => set({ fontFamily }),
+      setBgStyle:       (bgStyle)       => set({ bgStyle }),
+      setSiteName:      (siteName)      => set({ siteName }),
+      setTagline:       (tagline)       => set({ tagline }),
+      setLogoEmoji:     (logoEmoji)     => set({ logoEmoji }),
+      setGlowIntensity: (glowIntensity) => set({ glowIntensity }),
+      setShowParticles: (showParticles) => set({ showParticles }),
+      setCardStyle:     (cardStyle)     => set({ cardStyle }),
+      setHiddenModels:  (hiddenModels)  => set({ hiddenModels }),
+      toggleHideModel:  (id)            => {
+        const cur = get().hiddenModels
+        const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+        set({ hiddenModels: next })
+      },
+      setAll:  (config) => set(config),
+      reset:   ()       => set(DEFAULTS),
     }),
     {
       name: "cad-portfolio-theme",
-      // isAdmin never persists — resets on browser close
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const {
           isAdmin, setIsAdmin, setAccent, setBgColor, setCardOpacity,
           setBorderRadius, setFontFamily, setBgStyle, setSiteName, setTagline,
           setLogoEmoji, setGlowIntensity, setShowParticles, setCardStyle,
-          setAll, reset,
+          setHiddenModels, toggleHideModel, setAll, reset,
           ...config
         } = state
         return config
@@ -103,17 +107,17 @@ export function applyThemeVars(theme: ThemeConfig) {
   const root = document.documentElement
 
   const hex = (theme.accent ?? "#6366f1").replace("#", "")
-  const r = parseInt(hex.slice(0, 2), 16) || 99
-  const g = parseInt(hex.slice(2, 4), 16) || 102
-  const b = parseInt(hex.slice(4, 6), 16) || 241
+  const r   = parseInt(hex.slice(0, 2), 16) || 99
+  const g   = parseInt(hex.slice(2, 4), 16) || 102
+  const b   = parseInt(hex.slice(4, 6), 16) || 241
 
-  root.style.setProperty("--accent", theme.accent)
-  root.style.setProperty("--accent-rgb", `${r},${g},${b}`)
-  root.style.setProperty("--accent-muted", `rgba(${r},${g},${b},0.15)`)
-  root.style.setProperty("--accent-glow",  `rgba(${r},${g},${b},0.35)`)
-  root.style.setProperty("--bg-primary",   theme.bgColor)
-  root.style.setProperty("--card-opacity", `${theme.cardOpacity}`)
-  root.style.setProperty("--glow-intensity", `${(theme.glowIntensity ?? 70) / 100}`)
+  root.style.setProperty("--accent",          theme.accent)
+  root.style.setProperty("--accent-rgb",       `${r},${g},${b}`)
+  root.style.setProperty("--accent-muted",     `rgba(${r},${g},${b},0.15)`)
+  root.style.setProperty("--accent-glow",      `rgba(${r},${g},${b},0.35)`)
+  root.style.setProperty("--bg-primary",       theme.bgColor)
+  root.style.setProperty("--card-opacity",     `${theme.cardOpacity}`)
+  root.style.setProperty("--glow-intensity",   `${(theme.glowIntensity ?? 70) / 100}`)
 
   const radii = { sharp: "4px", rounded: "12px", pill: "9999px" }
   root.style.setProperty("--card-radius", radii[theme.borderRadius] ?? "12px")

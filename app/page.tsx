@@ -11,6 +11,7 @@ import { ModelCard } from "@/components/ui/model-card"
 import { ThemeCustomizer } from "@/components/ui/theme-customizer"
 import { Footer } from "@/components/ui/footer"
 import { MODELS, CATEGORIES } from "@/lib/models"
+import { useThemeStore } from "@/lib/use-theme-store"
 import Link from "next/link"
 
 // ── Scroll-reveal hook ────────────────────────────────────────────────────────
@@ -73,6 +74,8 @@ export default function HomePage() {
   const [viewMode,       setViewMode]       = useState<"grid" | "list">("grid")
   const [showSortMenu,   setShowSortMenu]   = useState(false)
 
+  const hiddenModels = useThemeStore((s) => s.hiddenModels)
+
   // Close sort menu on outside click
   useEffect(() => {
     const h = () => setShowSortMenu(false)
@@ -82,6 +85,7 @@ export default function HomePage() {
 
   const filtered = useMemo(() => {
     let result = MODELS.filter((m) => {
+      if (hiddenModels.includes(m.id)) return false
       const matchesCategory = activeCategory === "All" || m.category === activeCategory
       const q = search.toLowerCase()
       const matchesSearch =
@@ -97,7 +101,7 @@ export default function HomePage() {
     if (sortKey === "name")    result = [...result].sort((a, b) => a.title.localeCompare(b.title))
 
     return result
-  }, [search, activeCategory, sortKey])
+  }, [search, activeCategory, sortKey, hiddenModels])
 
   return (
     <>
@@ -124,7 +128,7 @@ export default function HomePage() {
                   All Models
                 </h2>
                 <p className="text-white/35 mt-1.5 text-sm">
-                  {filtered.length} of {MODELS.length} models
+                  {filtered.length} of {MODELS.filter((m) => !hiddenModels.includes(m.id)).length} models
                 </p>
               </div>
 
