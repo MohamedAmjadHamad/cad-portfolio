@@ -46,6 +46,7 @@ export function ModelCard({ model }: { model: Model3D }) {
             color={model.accentColor}
             hovered={hovered}
             gradient={model.gradient}
+            fileUrl={model.fileUrl || undefined}
           />
 
           {/* Overlay gradient (bottom fade into card body) */}
