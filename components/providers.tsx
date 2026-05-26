@@ -1,33 +1,42 @@
 "use client"
 
-import { useEffect } from "react"
-import { useThemeStore, applyThemeVars } from "@/lib/use-theme-store"
+import { useEffect, useRef } from "react"
+import { useThemeStore, applyThemeVars, type ThemeConfig } from "@/lib/use-theme-store"
 
 export function ThemeApplier() {
-  const theme = useThemeStore()
+  const store = useThemeStore()
+  const loaded = useRef(false)
 
+  // ── Load published theme from server on first mount ───────────────────────
   useEffect(() => {
-    applyThemeVars(theme)
-    // Apply background style as a data attribute
-    document.body.setAttribute("data-bg-style", theme.bgStyle)
-    // Apply font-display CSS var
-    document.documentElement.style.setProperty("--font-display", (() => {
-      const fonts: Record<string, string> = {
-        "space-grotesk": "'Space Grotesk', sans-serif",
-        inter: "'Inter', sans-serif",
-        mono: "'JetBrains Mono', monospace",
-        slab: "'Roboto Slab', serif",
-      }
-      return fonts[theme.fontFamily] ?? fonts["space-grotesk"]
-    })())
+    if (loaded.current) return
+    loaded.current = true
+
+    fetch("/api/theme")
+      .then((r) => r.json())
+      .then((saved: ThemeConfig) => {
+        if (saved?.accent) {
+          store.setAll(saved)
+        }
+      })
+      .catch(() => {
+        // Server not available — keep the localStorage values
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Apply CSS vars whenever theme values change ───────────────────────────
+  useEffect(() => {
+    applyThemeVars(store)
+    document.body.setAttribute("data-bg-style", store.bgStyle)
   }, [
-    theme.accent,
-    theme.bgColor,
-    theme.cardOpacity,
-    theme.borderRadius,
-    theme.fontFamily,
-    theme.bgStyle,
-    theme,
+    store.accent,
+    store.bgColor,
+    store.cardOpacity,
+    store.borderRadius,
+    store.fontFamily,
+    store.bgStyle,
+    store,
   ])
 
   return null

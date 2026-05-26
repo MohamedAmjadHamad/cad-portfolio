@@ -27,6 +27,6 @@ export const siteConfig = {
     title: "Moody | 3D CAD Models",
     description:
       "Explore and download professional 3D CAD models for printing. Built with precision, shared for free.",
-    url: "https://moody3D.com",
+    url: "https://cad-portfolio-6z33.vercel.app",
   },
 }

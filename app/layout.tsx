@@ -3,6 +3,7 @@ import { Space_Grotesk, Inter } from "next/font/google"
 import "./globals.css"
 import { siteConfig } from "@/lib/site-config"
 import { ThemeApplier } from "@/components/providers"
+import { AdminUnlock } from "@/components/ui/admin-unlock"
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ background: "var(--bg-primary, #050508)", color: "#f1f5f9" }}
       >
         <ThemeApplier />
+        <AdminUnlock />
         {children}
       </body>
     </html>

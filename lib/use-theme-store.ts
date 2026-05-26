@@ -4,25 +4,22 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
 export interface ThemeConfig {
-  /** Primary accent color (hex) */
   accent: string
-  /** Page background color (hex) */
   bgColor: string
-  /** Card glass opacity 0–20 */
   cardOpacity: number
-  /** Border radius preset */
   borderRadius: "sharp" | "rounded" | "pill"
-  /** Font family preset */
   fontFamily: "space-grotesk" | "inter" | "mono" | "slab"
-  /** Background style */
   bgStyle: "solid" | "mesh" | "dots" | "grid"
-  /** Site display name */
   siteName: string
-  /** Site tagline */
   tagline: string
 }
 
 interface ThemeStore extends ThemeConfig {
+  // Admin state (not persisted — clears on page close)
+  isAdmin: boolean
+  setIsAdmin: (v: boolean) => void
+
+  // Individual setters (used by the customizer sliders/pickers)
   setAccent: (v: string) => void
   setBgColor: (v: string) => void
   setCardOpacity: (v: number) => void
@@ -31,6 +28,10 @@ interface ThemeStore extends ThemeConfig {
   setBgStyle: (v: ThemeConfig["bgStyle"]) => void
   setSiteName: (v: string) => void
   setTagline: (v: string) => void
+
+  // Batch setter — used when loading saved theme from server
+  setAll: (config: ThemeConfig) => void
+
   reset: () => void
 }
 
@@ -41,14 +42,16 @@ const DEFAULTS: ThemeConfig = {
   borderRadius: "rounded",
   fontFamily: "space-grotesk",
   bgStyle: "mesh",
-  siteName: "Your Name",
-  tagline: "Precision-engineered 3D models — ready to print",
+  siteName: "Moody",
+  tagline: "Precision-engineered 3D models ready to print",
 }
 
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
       ...DEFAULTS,
+      isAdmin: false,
+      setIsAdmin: (isAdmin) => set({ isAdmin }),
       setAccent: (accent) => set({ accent }),
       setBgColor: (bgColor) => set({ bgColor }),
       setCardOpacity: (cardOpacity) => set({ cardOpacity }),
@@ -57,17 +60,27 @@ export const useThemeStore = create<ThemeStore>()(
       setBgStyle: (bgStyle) => set({ bgStyle }),
       setSiteName: (siteName) => set({ siteName }),
       setTagline: (tagline) => set({ tagline }),
+      setAll: (config) => set(config),
       reset: () => set(DEFAULTS),
     }),
-    { name: "cad-portfolio-theme" }
+    {
+      name: "cad-portfolio-theme",
+      // Don't persist isAdmin — admin session resets when browser closes
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { isAdmin, setIsAdmin, setAccent, setBgColor, setCardOpacity,
+          setBorderRadius, setFontFamily, setBgStyle, setSiteName, setTagline,
+          setAll, reset, ...config } = state
+        return config
+      },
+    }
   )
 )
 
-/** Call this in a useEffect to apply CSS vars to <html> */
+/** Applies the current theme config as CSS custom properties on <html> */
 export function applyThemeVars(theme: ThemeConfig) {
   const root = document.documentElement
 
-  // Convert hex accent to RGB components for rgba() usage
   const hex = theme.accent.replace("#", "")
   const r = parseInt(hex.slice(0, 2), 16)
   const g = parseInt(hex.slice(2, 4), 16)
@@ -80,11 +93,7 @@ export function applyThemeVars(theme: ThemeConfig) {
   root.style.setProperty("--bg-primary", theme.bgColor)
   root.style.setProperty("--card-opacity", `${theme.cardOpacity}`)
 
-  const radii = {
-    sharp: "4px",
-    rounded: "12px",
-    pill: "9999px",
-  }
+  const radii = { sharp: "4px", rounded: "12px", pill: "9999px" }
   root.style.setProperty("--card-radius", radii[theme.borderRadius])
 
   const fonts: Record<string, string> = {

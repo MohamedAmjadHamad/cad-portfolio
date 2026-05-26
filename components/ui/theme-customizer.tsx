@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { X, RotateCcw, Palette, Type, Layers, Sun } from "lucide-react"
-import { useThemeStore } from "@/lib/use-theme-store"
+import { useEffect, useRef, useState } from "react"
+import { X, RotateCcw, Palette, Type, Layers, Sun, Globe, LogOut, CheckCircle, AlertCircle } from "lucide-react"
+import { useThemeStore, type ThemeConfig } from "@/lib/use-theme-store"
 
 const ACCENT_PRESETS = [
   { label: "Indigo", value: "#6366f1" },
@@ -52,6 +52,54 @@ interface ThemeCustomizerProps {
 export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
   const store = useThemeStore()
   const panelRef = useRef<HTMLDivElement>(null)
+  const [publishStatus, setPublishStatus] = useState<"idle" | "saving" | "saved" | "error">("idle")
+  const [publishError, setPublishError] = useState("")
+
+  const handlePublish = async () => {
+    const adminKey = sessionStorage.getItem("admin_key")
+    if (!adminKey) return
+
+    setPublishStatus("saving")
+    setPublishError("")
+
+    const themePayload: ThemeConfig & { adminKey: string } = {
+      accent: store.accent,
+      bgColor: store.bgColor,
+      cardOpacity: store.cardOpacity,
+      borderRadius: store.borderRadius,
+      fontFamily: store.fontFamily,
+      bgStyle: store.bgStyle,
+      siteName: store.siteName,
+      tagline: store.tagline,
+      adminKey,
+    }
+
+    try {
+      const res = await fetch("/api/theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(themePayload),
+      })
+      const data = await res.json() as { success: boolean; error?: string }
+      if (res.ok && data.success) {
+        setPublishStatus("saved")
+        setTimeout(() => setPublishStatus("idle"), 3000)
+      } else {
+        setPublishStatus("error")
+        setPublishError(data.error ?? "Failed to save")
+      }
+    } catch {
+      setPublishStatus("error")
+      setPublishError("Network error")
+    }
+  }
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_mode")
+    sessionStorage.removeItem("admin_key")
+    store.setIsAdmin(false)
+    onClose()
+  }
 
   // Close on outside click
   useEffect(() => {
@@ -281,11 +329,43 @@ export function ThemeCustomizer({ open, onClose }: ThemeCustomizerProps) {
 
         </div>
 
-        {/* Footer hint */}
-        <div className="px-5 py-3 border-t border-white/[0.06]">
-          <p className="text-xs text-white/20 text-center">
-            Changes save automatically to your browser
-          </p>
+        {/* Footer — Publish + Logout */}
+        <div className="px-5 py-4 border-t border-white/[0.06] space-y-2">
+          {/* Publish for Everyone */}
+          <button
+            onClick={handlePublish}
+            disabled={publishStatus === "saving"}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
+            style={{ background: publishStatus === "saved" ? "#10b981" : "var(--accent)" }}
+          >
+            {publishStatus === "saving" && <span className="w-4 h-4 rounded-full border-2 border-t-transparent border-white animate-spin" />}
+            {publishStatus === "saved" && <CheckCircle className="w-4 h-4" />}
+            {publishStatus === "error" && <AlertCircle className="w-4 h-4" />}
+            {publishStatus === "idle" && <Globe className="w-4 h-4" />}
+            {publishStatus === "saving" ? "Saving…"
+              : publishStatus === "saved" ? "Published for everyone!"
+              : publishStatus === "error" ? "Error — see below"
+              : "Publish for Everyone"}
+          </button>
+
+          {publishStatus === "error" && (
+            <p className="text-red-400 text-xs text-center">{publishError}</p>
+          )}
+
+          {publishStatus !== "error" && (
+            <p className="text-xs text-white/20 text-center">
+              Previews are instant · click Publish to save for all visitors
+            </p>
+          )}
+
+          {/* Admin logout */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-white/40 hover:text-white/70 text-xs transition-colors cursor-pointer border border-white/[0.06] hover:border-white/20"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Exit admin mode
+          </button>
         </div>
       </div>
     </>

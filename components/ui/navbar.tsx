@@ -10,6 +10,7 @@ export function Navbar({ onCustomizerOpen }: { onCustomizerOpen: () => void }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const siteName = useThemeStore((s) => s.siteName)
+  const isAdmin = useThemeStore((s) => s.isAdmin)
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 24)
@@ -70,13 +71,21 @@ export function Navbar({ onCustomizerOpen }: { onCustomizerOpen: () => void }) {
               <Code2 className="w-4 h-4 text-white/70" />
             </a>
           )}
-          <button
-            onClick={onCustomizerOpen}
-            className="w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
-            aria-label="Open theme customizer"
-          >
-            <Settings className="w-4 h-4 text-white/70" />
-          </button>
+          {/* Settings gear — only visible to the owner (admin mode) */}
+          {isAdmin && (
+            <button
+              onClick={onCustomizerOpen}
+              title="Owner: edit theme"
+              className="w-9 h-9 rounded-lg flex items-center justify-center transition-colors cursor-pointer border"
+              style={{
+                background: "var(--accent-muted)",
+                borderColor: "var(--accent)",
+              }}
+              aria-label="Open theme customizer"
+            >
+              <Settings className="w-4 h-4" style={{ color: "var(--accent)" }} />
+            </button>
+          )}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden w-9 h-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors cursor-pointer"
